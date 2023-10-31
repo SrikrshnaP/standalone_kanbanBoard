@@ -5,12 +5,19 @@ import Column from "./Column";
 export default function KanbanBoard() {
   const [completed, setCompleted] = useState([]);
   const [incomplete, setIncomplete] = useState([]);
+  const [reviewed, setReviewed] = useState([]);
 
   useEffect(() => {
-    fetch("https://jsonplaceholder.typicode.com/todos")
-      .then((response) => response.json())
+    fetch("http://localhost:3001/tasks")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.json();
+      })
       .then((json) => {
         setCompleted(json.filter((task) => task.completed));
+        setReviewed(json.filter((task) => task.reviewed));
         setIncomplete(json.filter((task) => !task.completed));
       });
   }, []);
@@ -21,8 +28,9 @@ export default function KanbanBoard() {
     if (source.droppableId == destination.droppableId) return;
 
     //REMOVE FROM SOURCE ARRAY
-
-    if (source.droppableId == 2) {
+    if(source.droppableId == 4)  {
+      setReviewed(removeItemById(draggableId, reviewed));
+    } else if (source.droppableId == 2) {
       setCompleted(removeItemById(draggableId, completed));
     } else {
       setIncomplete(removeItemById(draggableId, incomplete));
@@ -30,10 +38,12 @@ export default function KanbanBoard() {
 
     // GET ITEM
 
-    const task = findItemById(draggableId, [...incomplete, ...completed]);
+    const task = findItemById(draggableId, [...incomplete, ...completed, ...reviewed]);
 
     //ADD ITEM
-    if (destination.droppableId == 2) {
+    if(destination.droppableId == 4)  {
+      setReviewed([{ ...task, reviewed: !task.reviewed }, ...reviewed]);
+    } else if (destination.droppableId == 2) {
       setCompleted([{ ...task, completed: !task.completed }, ...completed]);
     } else {
       setIncomplete([{ ...task, completed: !task.completed }, ...incomplete]);
@@ -50,7 +60,7 @@ export default function KanbanBoard() {
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <h2 style={{ textAlign: "center" }}>PROGRESS BOARD</h2>
+      <h2 style={{ textAlign: "center" }}>KANBAN BOARD</h2>
 
       <div
         style={{
@@ -63,6 +73,7 @@ export default function KanbanBoard() {
         <Column title={"TO DO"} tasks={incomplete} id={"1"} />
         <Column title={"DONE"} tasks={completed} id={"2"} />
         <Column title={"BACKLOG"} tasks={[]} id={"3"} />
+        <Column title={"REVIEWED"} tasks={reviewed} id={"4"}/>
       </div>
     </DragDropContext>
   );
